@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <rect width="300" height="300" fill="#121310"/>
+  <rect x="10.5" y="10.5" width="279" height="279" fill="none" stroke="#d9a469" stroke-opacity=".22"/>
+  <path d="M10 42V10h32M258 10h32v32M290 258v32h-32M42 290H10v-32" fill="none" stroke="#d9a469" stroke-opacity=".5"/>
+  <circle cx="150" cy="126" r="34" fill="none" stroke="#d9a469" stroke-opacity=".28"/>
+  <path d="M150 92v68M116 126h68" stroke="#d9a469" stroke-opacity=".18"/>
+  <text x="150" y="214" text-anchor="middle" font-family="Georgia,serif" font-size="34" letter-spacing="4" fill="#f4efe4" fill-opacity=".55">HW</text>
+  <text x="150" y="238" text-anchor="middle" font-family="monospace" font-size="7" letter-spacing="3" fill="#a29d92" fill-opacity=".7">NO ARCHIVE IMAGE</text>
+</svg>

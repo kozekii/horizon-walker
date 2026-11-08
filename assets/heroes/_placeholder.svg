@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" fill="#e9e1d2"/>
+  <g fill="none" stroke="#17140f" stroke-width="2" opacity=".55">
+    <circle cx="100" cy="100" r="58"/>
+    <circle cx="100" cy="100" r="38"/>
+    <path d="M42 100h116M100 42v116"/>
+  </g>
+  <path d="M70 128V72h9l20 34 20-34h9v56h-9V88l-18 30h-4L79 88v40z" fill="#8b2f23"/>
+  <text x="100" y="158" text-anchor="middle" font-family="monospace" font-size="10" letter-spacing="2" fill="#514a3e">NO PORTRAIT</text>
+</svg>

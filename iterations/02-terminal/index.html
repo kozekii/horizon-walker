@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horizon Walker — Rift Terminal</title>
+<meta name="description" content="Horizon Walker field database: filter 64 vanguards, browse plates, and read two years of patches.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2317140f'/%3E%3Ctext x='16' y='22' font-family='Georgia' font-size='13' text-anchor='middle' fill='%23f3eee4'%3EHW%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#06090a; --panel:#0a0f10; --panel-2:#0d1314; --ink:#e7ebe4; --mut:#85918b; --dim:#5b6661;
+    --line:rgba(231,235,228,.10); --line-2:rgba(231,235,228,.055);
+    --lime:#c8f24f; --cyan:#6cd9e8; --ox:#ff6b4a; --gold:#ffd166;
+    --ex:#ffd166; --ss:#c8f24f; --s:#6cd9e8; --a:#9aa6a0;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Space Grotesk",system-ui,sans-serif; font-size:14px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      linear-gradient(rgba(231,235,228,.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(231,235,228,.028) 1px, transparent 1px);
+    background-size:64px 64px;
+  }
+  body::after{content:""; position:fixed; inset:0; pointer-events:none; z-index:5;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px)}
+  ::selection{background:var(--lime); color:#06090a}
+  img{display:block; max-width:100%}
+  figure{margin:0}
+  a{color:inherit}
+  button,input,select{font:inherit; color:inherit}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .wrap{max-width:1520px; margin:0 auto; padding:0 30px}
+
+  /* top bar */
+  .topbar{position:sticky; top:0; z-index:30; background:rgba(6,9,10,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--line)}
+  .topbar .wrap{height:58px; display:flex; align-items:center; gap:26px}
+  .brand{display:flex; align-items:center; gap:11px; font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; white-space:nowrap}
+  .brand i{width:26px; height:26px; border:1px solid var(--lime); display:grid; place-items:center; font-style:normal; color:var(--lime); font-weight:700; font-size:10px; letter-spacing:0}
+  .brand b{font-weight:500}
+  .brand span{color:var(--dim)}
+  .topnav{display:flex; gap:2px; margin-left:auto}
+  .topnav a{padding:7px 12px; text-decoration:none; font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); border:1px solid transparent}
+  .topnav a:hover{color:var(--ink); border-color:var(--line)}
+  .status{display:flex; align-items:center; gap:8px; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); border-left:1px solid var(--line); padding-left:22px}
+  .pulse{width:6px; height:6px; border-radius:50%; background:var(--lime); box-shadow:0 0 0 0 rgba(200,242,79,.6); animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(200,242,79,.5)}70%{box-shadow:0 0 0 7px rgba(200,242,79,0)}100%{box-shadow:0 0 0 0 rgba(200,242,79,0)}}
+
+  /* hero */
+  .hero{position:relative; overflow:hidden; border-bottom:1px solid var(--line)}
+  .hero-media{position:absolute; inset:0; background:url("../../assets/cg/world-city_Destroy.webp") center 38%/cover no-repeat; opacity:.22;
+    -webkit-mask-image:linear-gradient(to left, #000 0%, rgba(0,0,0,.75) 45%, transparent 78%);
+    mask-image:linear-gradient(to left, #000 0%, rgba(0,0,0,.75) 45%, transparent 78%); filter:grayscale(.35) contrast(1.08)}
+  .hero .wrap{position:relative; display:grid; grid-template-columns:minmax(0,1.35fr) minmax(340px,.65fr); gap:56px; padding-top:64px; padding-bottom:56px; align-items:end}
+  .eyebrow{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.22em; text-transform:uppercase; color:var(--lime); margin:0 0 18px; display:flex; align-items:center; gap:10px}
+  .eyebrow::before{content:""; width:26px; height:1px; background:var(--lime)}
+  h1{font-size:clamp(66px,8.3vw,124px); line-height:.84; letter-spacing:-.05em; font-weight:700; text-transform:uppercase; margin:0 0 24px}
+  h1 span{display:block}
+  h1 .out{color:transparent; -webkit-text-stroke:1.5px var(--lime)}
+  .hero-deck{font-size:17px; line-height:1.5; color:var(--mut); max-width:50ch; margin:0 0 28px}
+  .hero-deck b{color:var(--ink); font-weight:500}
+  .chips{display:flex; flex-wrap:wrap; gap:0; border-top:1px solid var(--line); max-width:660px}
+  .chip{padding:12px 18px 0 0; margin-right:18px; border-right:1px solid var(--line); min-width:96px}
+  .chip:last-child{border-right:0}
+  .chip span{display:block; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim)}
+  .chip b{display:block; font-size:14px; font-weight:500; margin-top:3px; white-space:nowrap}
+  .chip b i{font-style:normal; color:var(--lime)}
+
+  .search-panel{position:relative; background:rgba(10,15,16,.86); border:1px solid var(--line); padding:20px 20px 18px; backdrop-filter:blur(8px)}
+  .search-panel::before{content:""; position:absolute; left:-1px; top:-1px; width:14px; height:14px; border-left:1px solid var(--lime); border-top:1px solid var(--lime)}
+  .search-panel::after{content:""; position:absolute; right:-1px; bottom:-1px; width:14px; height:14px; border-right:1px solid var(--lime); border-bottom:1px solid var(--lime)}
+  .sp-head{display:flex; justify-content:space-between; align-items:center; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--mut); border-bottom:1px solid var(--line); padding-bottom:11px; margin-bottom:16px}
+  .sp-head b{color:var(--lime); font-weight:500; display:flex; align-items:center; gap:7px}
+  .sp-title{font-size:25px; line-height:1.08; font-weight:600; letter-spacing:-.02em; margin:0 0 6px}
+  .sp-weapon{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.08em; color:var(--cyan); margin:0 0 18px}
+  .sp-row{display:flex; justify-content:space-between; gap:12px; border-top:1px solid var(--line-2); padding-top:11px; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+  .sp-row b{color:var(--ink); font-weight:500; letter-spacing:.06em}
+  .sp-bar{height:2px; background:var(--line); margin-top:14px; position:relative; overflow:hidden}
+  .sp-bar i{position:absolute; inset:0 auto 0 0; width:58%; background:linear-gradient(90deg,var(--lime),var(--cyan))}
+  .sp-foot{margin-top:12px; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); display:flex; justify-content:space-between}
+
+  /* section chrome */
+  section{scroll-margin-top:70px}
+  .band{border-bottom:1px solid var(--line)}
+  .sec-top{display:flex; align-items:flex-end; justify-content:space-between; gap:26px; padding:56px 0 18px; border-bottom:1px solid var(--line)}
+  .sec-title{display:flex; align-items:baseline; gap:18px; min-width:0}
+  .sec-title .idx{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.16em; color:var(--lime); white-space:nowrap}
+  .sec-title h2{font-size:clamp(34px,3.6vw,52px); line-height:.95; letter-spacing:-.035em; text-transform:uppercase; font-weight:600; margin:0}
+  .sec-top p{margin:0; color:var(--mut); max-width:48ch; font-size:14px}
+  .sec-body{padding:28px 0 64px}
+
+  /* roster */
+  .roster{display:grid; grid-template-columns:236px minmax(0,1fr); gap:0; border-bottom:1px solid var(--line)}
+  .facets{border-right:1px solid var(--line); padding:24px 24px 40px 0; align-self:start; position:sticky; top:58px}
+  .f-block{margin-bottom:24px}
+  .f-label{display:flex; justify-content:space-between; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); margin-bottom:8px}
+  .searchbox{display:flex; align-items:center; gap:8px; border:1px solid var(--line); background:var(--panel); padding:0 10px; height:38px}
+  .searchbox:focus-within{border-color:var(--lime)}
+  .searchbox svg{flex:none; opacity:.5}
+  .searchbox input{flex:1; min-width:0; border:0; outline:0; background:transparent; font-size:12px}
+  .searchbox input::placeholder{color:var(--dim)}
+  .seg{display:grid; grid-template-columns:repeat(5,1fr); gap:3px}
+  .seg button{border:1px solid var(--line); background:transparent; padding:6px 0; cursor:pointer; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.06em; color:var(--mut)}
+  .seg button:hover{border-color:var(--mut); color:var(--ink)}
+  .seg button.on{background:var(--lime); color:#06090a; border-color:var(--lime); font-weight:700}
+  .el-list{display:flex; flex-direction:column; gap:1px}
+  .el-btn{display:flex; align-items:center; gap:8px; border:0; background:transparent; padding:5px 6px; cursor:pointer; text-align:left; font-size:11px; color:var(--mut)}
+  .el-btn:hover{background:var(--panel-2); color:var(--ink)}
+  .el-btn.on{background:var(--panel-2); color:var(--ink); box-shadow:inset 2px 0 0 var(--lime)}
+  .el-btn .n{margin-left:auto; font-family:"JetBrains Mono",monospace; font-size:8px; color:var(--dim)}
+  .swatch{width:7px; height:7px; border-radius:50%; flex:none}
+  select.sort{width:100%; height:36px; border:1px solid var(--line); background:var(--panel); color:var(--ink); padding:0 8px; font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.04em; outline:0}
+  select.sort:focus{border-color:var(--lime)}
+  .reset{width:100%; border:1px solid var(--line); background:transparent; color:var(--mut); padding:8px; cursor:pointer; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase}
+  .reset:hover{color:var(--ox); border-color:var(--ox)}
+
+  .db{padding:20px 0 56px 28px; min-width:0}
+  .db-bar{display:flex; align-items:center; gap:16px; margin-bottom:16px}
+  .db-count{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--mut)}
+  .db-count b{color:var(--lime); font-weight:500}
+  .db-tools{display:flex; gap:4px; margin-left:auto}
+  .db-tools button{border:1px solid var(--line); background:transparent; padding:6px 11px; cursor:pointer; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut)}
+  .db-tools button.on{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+  .db-tools button:hover:not(.on){border-color:var(--mut); color:var(--ink)}
+
+  .units{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px}
+  .unit{position:relative; border:1px solid var(--line); background:var(--panel); padding:0 0 10px; text-align:left; cursor:pointer; overflow:hidden; transition:border-color .18s, transform .18s}
+  .unit:hover{border-color:rgba(200,242,79,.55); transform:translateY(-2px)}
+  .unit:hover .uport img{transform:scale(1.04)}
+  .uport{position:relative; aspect-ratio:1; background:radial-gradient(circle at 50% 38%, #1a2526 0%, #0a0f10 70%); overflow:hidden; border-bottom:1px solid var(--line)}
+  .uport img{width:100%; height:100%; object-fit:cover; transition:transform .35s}
+  .ur{position:absolute; top:6px; left:6px; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.08em; font-weight:700; padding:2px 5px; background:rgba(6,9,10,.8); border:1px solid currentColor}
+  .ucost{position:absolute; top:6px; right:6px; font-family:"JetBrains Mono",monospace; font-size:8px; color:var(--ink); background:rgba(6,9,10,.8); padding:2px 4px}
+  .uname{font-size:13px; font-weight:600; letter-spacing:-.01em; padding:9px 9px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .umeta{display:flex; align-items:center; gap:5px; padding:2px 9px 0; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); white-space:nowrap; overflow:hidden}
+  .umeta .dot{width:5px; height:5px; border-radius:50%; flex:none}
+
+  .tablewrap{max-height:640px; overflow:auto; border:1px solid var(--line); background:var(--panel)}
+  table{width:100%; border-collapse:collapse; font-size:12px}
+  thead th{position:sticky; top:0; background:#0b1112; text-align:left; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); padding:9px 10px; border-bottom:1px solid var(--line); z-index:2; white-space:nowrap}
+  tbody td{padding:8px 10px; border-bottom:1px solid var(--line-2); white-space:nowrap}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--panel-2)}
+  td.num,th.num{text-align:right; font-family:"JetBrains Mono",monospace; font-size:10px; color:var(--mut)}
+  .tname{display:flex; align-items:center; gap:9px; font-weight:500}
+  .tname img{width:26px; height:26px; border-radius:50%; object-fit:cover; border:1px solid var(--line)}
+  .tdim{color:var(--dim); font-size:11px}
+
+  /* drawer */
+  .drawer{position:fixed; top:0; right:0; bottom:0; width:min(440px,92vw); background:#090e0f; border-left:1px solid var(--line); z-index:45; transform:translateX(102%); transition:transform .3s cubic-bezier(.2,.8,.2,1); overflow:auto}
+  .drawer.on{transform:none}
+  .drawer-back{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:44; opacity:0; pointer-events:none; transition:opacity .3s}
+  .drawer-back.on{opacity:1; pointer-events:auto}
+  .dtop{position:sticky; top:0; background:rgba(9,14,15,.94); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); padding:12px 18px; display:flex; justify-content:space-between; align-items:center; z-index:1}
+  .dtop span{font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim)}
+  .dclose{background:none; border:1px solid var(--line); color:var(--mut); padding:5px 9px; cursor:pointer; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.1em}
+  .dclose:hover{color:var(--ox); border-color:var(--ox)}
+  .dport{display:grid; grid-template-columns:118px 1fr; gap:16px; padding:20px 18px; border-bottom:1px solid var(--line)}
+  .dport img{width:118px; height:118px; object-fit:cover; border:1px solid var(--line)}
+  .dport h3{font-size:28px; line-height:1; letter-spacing:-.03em; margin:0 0 8px}
+  .dport .dmeta{font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); line-height:1.9}
+  .dport .dmeta b{color:var(--ink); font-weight:500}
+  .dstats{padding:18px; border-bottom:1px solid var(--line)}
+  .ds{display:grid; grid-template-columns:34px 1fr 28px; align-items:center; gap:10px; margin-bottom:9px}
+  .ds span{font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.1em; color:var(--dim)}
+  .ds b{font-family:"JetBrains Mono",monospace; font-size:10px; color:var(--ink); text-align:right; font-weight:500}
+  .ds .bar{height:3px; background:var(--line); position:relative}
+  .ds .bar i{position:absolute; inset:0 auto 0 0; background:var(--lime)}
+  .dtags{padding:18px; display:flex; flex-wrap:wrap; gap:5px}
+  .dtags span{border:1px solid var(--line); padding:4px 7px; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut)}
+  .dnote{padding:0 18px 24px; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.08em; color:var(--dim); text-transform:uppercase}
+
+  /* gallery */
+  .plates{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px}
+  .plate{position:relative; border:1px solid var(--line); background:var(--panel); cursor:zoom-in; overflow:hidden; padding:0}
+  .plate img{width:100%; aspect-ratio:16/10; object-fit:cover; transition:transform .4s, filter .4s; filter:saturate(.9)}
+  .plate:hover img{transform:scale(1.04); filter:saturate(1.1)}
+  .plate figcaption{position:absolute; inset:auto 0 0 0; padding:24px 10px 8px; background:linear-gradient(transparent, rgba(6,9,10,.92)); display:flex; justify-content:space-between; gap:8px; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut)}
+  .plate figcaption b{color:var(--ink); font-weight:500}
+
+  /* wardrobe */
+  .skinbar{display:flex; flex-wrap:wrap; border:1px solid var(--line); background:var(--panel); margin-bottom:10px}
+  .skinbar button{border:0; background:transparent; padding:8px 9px; cursor:pointer; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut); border-right:1px solid var(--line-2)}
+  .skinbar button:hover{color:var(--ink)}
+  .skinbar button.on{background:var(--lime); color:#08100d}
+  .skinbar .scount{margin-left:auto; padding:8px 10px; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); border-left:1px solid var(--line-2)}
+  .skins{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px}
+  .skin{position:relative; border:1px solid var(--line); background:linear-gradient(180deg,#101a1b,#080d0e); cursor:zoom-in; overflow:hidden; padding:0}
+  .skin img{width:100%; aspect-ratio:3/4.15; object-fit:cover; object-position:bottom center; padding:0 0 26px; filter:saturate(.92); transition:transform .35s, filter .35s}
+  .skin:hover img,.skin:focus-visible img{transform:translateY(-3px); filter:saturate(1.05)}
+  .skin:focus-visible{outline:2px solid var(--lime); outline-offset:2px}
+  .sn{position:absolute; top:6px; right:6px; font-family:"JetBrains Mono",monospace; font-size:7px; letter-spacing:.08em; color:var(--cyan)}
+  .sc{position:absolute; left:0; right:0; bottom:0; padding:20px 7px 6px; background:linear-gradient(transparent,rgba(5,8,9,.95)); font-family:"JetBrains Mono",monospace; font-size:7.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--mut)}
+  .sc b{display:block; color:var(--ink); font-family:"Inter",sans-serif; font-size:10px; font-weight:500; letter-spacing:.02em; text-transform:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
+  /* timeline */
+  .tabs{display:flex; gap:2px; border-bottom:1px solid var(--line); margin-bottom:22px}
+  .tabs button{border:0; background:transparent; padding:10px 16px; cursor:pointer; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:var(--mut); border-bottom:2px solid transparent; margin-bottom:-1px}
+  .tabs button.on{color:var(--ink); border-bottom-color:var(--lime)}
+  .tabpane{display:none}
+  .tabpane.on{display:block}
+
+  .gantt{border:1px solid var(--line); background:var(--panel); padding:18px 18px 12px; overflow-x:auto}
+  .gantt-head{display:flex; justify-content:space-between; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); margin-bottom:10px}
+  .axis{position:relative; height:20px; border-bottom:1px solid var(--line); margin-left:190px}
+  .axis span{position:absolute; transform:translateX(-50%); font-family:"JetBrains Mono",monospace; font-size:8px; color:var(--dim); top:0}
+  .axis span:first-child{transform:none}
+  .axis span:last-child{transform:translateX(-100%)}
+  .grows{position:relative}
+  .grow{display:grid; grid-template-columns:190px 1fr; align-items:center; min-height:36px; border-bottom:1px solid var(--line-2)}
+  .glabel{padding-right:14px; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .glabel small{display:block; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.06em; color:var(--dim); text-transform:uppercase}
+  .gtrack{position:relative; height:36px}
+  .gtrack::before{content:""; position:absolute; inset:0; background-image:linear-gradient(90deg, var(--line-2) 1px, transparent 1px); background-size:calc(100%/5) 100%}
+  .gbar{position:absolute; top:9px; height:18px; background:rgba(108,217,232,.18); border:1px solid rgba(108,217,232,.5); display:flex; align-items:center; padding:0 6px; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.06em; color:var(--cyan); white-space:nowrap; overflow:hidden}
+  .gbar.active{background:rgba(200,242,79,.18); border-color:var(--lime); color:var(--lime)}
+  .gbar.new{background:rgba(255,209,102,.14); border-color:rgba(255,209,102,.5); color:var(--gold)}
+  .gantt-foot{display:flex; gap:18px; padding-top:12px; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+  .gantt-foot b{font-weight:500; color:var(--mut)}
+
+  .log{border-left:1px solid var(--line); margin-left:4px; padding-left:26px}
+  .log-year{display:flex; align-items:baseline; gap:12px; margin:24px 0 12px}
+  .log-year:first-child{margin-top:0}
+  .log-year b{font-family:"JetBrains Mono",monospace; font-size:12px; letter-spacing:.16em; color:var(--lime)}
+  .log-year span{font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim)}
+  .log-item{position:relative; display:grid; grid-template-columns:122px 1fr; gap:18px; padding:0 0 20px}
+  .log-item::before{content:""; position:absolute; left:-30px; top:6px; width:7px; height:7px; background:var(--bg); border:1px solid var(--mut)}
+  .log-item.hot::before{background:var(--lime); border-color:var(--lime)}
+  .log-item time{font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); padding-top:2px}
+  .log-item h4{margin:0 0 3px; font-size:15px; font-weight:500; letter-spacing:-.01em}
+  .log-item p{margin:0; font-size:12px; color:var(--mut); line-height:1.5}
+  .log-item em{font-style:normal; font-family:"JetBrains Mono",monospace; font-size:7px; letter-spacing:.12em; text-transform:uppercase; color:var(--lime); margin-left:8px}
+
+  .arch{max-height:520px; overflow:auto; border:1px solid var(--line); background:var(--panel)}
+  .arow{display:grid; grid-template-columns:110px 1fr; gap:16px; padding:9px 12px; border-bottom:1px solid var(--line-2); font-size:12px}
+  .arow:hover{background:var(--panel-2)}
+  .arow time{font-family:"JetBrains Mono",monospace; font-size:9px; color:var(--dim); padding-top:1px}
+  .arow span{color:var(--mut)}
+  .arow span b{color:var(--ink); font-weight:500}
+
+  /* systems */
+  .mods{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px}
+  .mod{border:1px solid var(--line); background:var(--panel); padding:16px 15px 18px; min-height:132px; position:relative}
+  .mod:hover{border-color:rgba(200,242,79,.4)}
+  .mod .mno{font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.14em; color:var(--lime); margin-bottom:14px}
+  .mod h3{margin:0 0 7px; font-size:15px; font-weight:600; letter-spacing:-.01em}
+  .mod p{margin:0; font-size:11.5px; line-height:1.5; color:var(--mut)}
+  .mod .mtag{position:absolute; right:12px; top:14px; font-family:"JetBrains Mono",monospace; font-size:7px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+
+  footer{border-top:1px solid var(--line); padding:26px 0 40px}
+  footer .wrap{display:flex; justify-content:space-between; gap:24px; align-items:flex-start; font-family:"JetBrains Mono",monospace; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); line-height:2}
+  footer p{margin:0; max-width:70ch}
+  footer .end{color:var(--mut); text-align:right; white-space:nowrap}
+  footer .end b{display:block; color:var(--ink); font-weight:500; font-size:10px; letter-spacing:.14em}
+  footer .end a{color:var(--dim); text-decoration:none; border-bottom:1px solid transparent}
+  footer .end a:hover{color:var(--ink)}
+  footer .end a.here{color:var(--lime); border-color:var(--lime)}
+
+  .lb{position:fixed; inset:0; z-index:60; background:rgba(3,6,6,.95); display:none; place-items:center; padding:32px}
+  .lb.on{display:grid}
+  .lb figure{margin:0; max-width:min(1200px,94vw); max-height:90vh}
+  .lb img{max-width:100%; max-height:80vh; object-fit:contain; border:1px solid var(--line)}
+  .lb figcaption{display:flex; justify-content:space-between; gap:18px; margin-top:10px; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--mut)}
+  .lb button{position:absolute; top:20px; right:22px; background:none; border:1px solid var(--line); color:var(--ink); padding:7px 11px; cursor:pointer; font-family:"JetBrains Mono",monospace; font-size:9px; letter-spacing:.12em}
+
+  @media (max-width:1200px){
+    .units{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .mods{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .hero .wrap{grid-template-columns:1fr 340px}
+  }
+  @media (max-width:980px){
+    .topbar .wrap{height:auto; flex-wrap:wrap; align-items:center; padding:10px 16px 0; gap:0}
+    .topnav{display:flex; order:3; width:100%; margin:8px 0 0; overflow-x:auto; border-top:1px solid var(--line); scrollbar-width:none}
+    .topnav::-webkit-scrollbar{display:none}
+    .topnav a{padding:10px 14px 10px 0; white-space:nowrap}
+    .status{margin-left:auto}
+    .hero .wrap{grid-template-columns:1fr; gap:34px; padding-top:44px}
+    .hero-media{opacity:.12}
+    .roster{grid-template-columns:1fr}
+    .facets{position:static; border-right:0; border-bottom:1px solid var(--line); padding:0 0 20px; display:grid; grid-template-columns:1fr 1fr; gap:0 24px}
+    .db{padding-left:0; padding-top:24px}
+    .units{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .plates{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .skins{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .log-item{grid-template-columns:100px 1fr; gap:12px}
+  }
+  @media (max-width:680px){
+    .wrap{padding:0 16px}
+    .brand span{display:none}
+    .status{display:none}
+    .chips{display:grid; grid-template-columns:1fr 1fr; max-width:none}
+    .chip{border-right:0; border-top:1px solid var(--line); padding-top:9px; margin-right:0}
+    .chip:nth-child(-n+2){border-top:0}
+    .units{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .plates{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .skins{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .skinbar .scount{width:100%; margin-left:0; border-left:0; border-top:1px solid var(--line-2)}
+    .facets{grid-template-columns:1fr}
+    .mods{grid-template-columns:1fr}
+    .sec-top{flex-direction:column; align-items:flex-start; gap:10px; padding-top:40px}
+    .sec-title{flex-direction:column; gap:8px}
+    .grow{grid-template-columns:120px 1fr}
+    .axis{margin-left:120px}
+    .glabel{font-size:10px}
+    .log-item{grid-template-columns:1fr; gap:4px}
+    .log{border-left:0; padding-left:0; margin-left:0}
+    .log-item::before{display:none}
+    .arow{grid-template-columns:92px 1fr}
+    footer .wrap{flex-direction:column}
+    footer .end{text-align:left}
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><i>HW</i><b>Rift Terminal</b><span>// field database</span></div>
+    <nav class="topnav" aria-label="Sections">
+      <a href="#roster">Roster</a>
+      <a href="#plates">Plates</a>
+      <a href="#skins">Skins</a>
+      <a href="#chronicle">Chronicle</a>
+      <a href="#systems">Systems</a>
+    </nav>
+    <div class="status"><span class="pulse"></span>Synced 2026-11-08</div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-media"></div>
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Gentlemaniac // post-apocalyptic turn-based RPG</p>
+      <h1><span>Horizon</span><span class="out">Walker</span></h1>
+      <p class="hero-deck"><b>The gates opened. The Forsaken came through.</b> One human ate a god, became the first Chosen Human, and started recruiting. You are the Human God. Build the squad that holds the line.</p>
+      <div class="chips">
+        <div class="chip"><span>Mobile</span><b>2024.09.23</b></div>
+        <div class="chip"><span>Steam</span><b>2025.08.24</b></div>
+        <div class="chip"><span>Vanguards</span><b><i>64</i> indexed</b></div>
+        <div class="chip"><span>Elements</span><b>08</b></div>
+        <div class="chip"><span>Patches</span><b>53</b></div>
+      </div>
+    </div>
+    <aside class="search-panel" aria-label="Active banner">
+      <div class="sp-head"><span>FairyNet // Special Search</span><b><span class="pulse"></span>Active</b></div>
+      <p class="sp-title">Intelligence Division's Wildcard</p>
+      <p class="sp-weapon">// PHANTOM STILETTO</p>
+      <div class="sp-row"><span>Window</span><b>Nov 05 &ndash; Nov 19</b></div>
+      <div class="sp-row"><span>Type</span><b>Rerun</b></div>
+      <div class="sp-row"><span>Run</span><b>082</b></div>
+      <div class="sp-bar"><i></i></div>
+      <div class="sp-foot"><span>Resets 10:00 KST</span><span>KST +09</span></div>
+    </aside>
+  </div>
+</div>
+
+<section id="roster">
+  <div class="wrap">
+    <div class="sec-top">
+      <div class="sec-title"><span class="idx">01 // DATABASE</span><h2>Vanguard Roster</h2></div>
+      <p>Level 60 base stats at EX rarity. Filter by rarity, element, or class; switch between plate grid and stat table.</p>
+    </div>
+    <div class="roster">
+      <aside class="facets">
+        <div class="f-block">
+          <div class="f-label"><span>Query</span><span>64 units</span></div>
+          <label class="searchbox">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            <input id="q" type="search" placeholder="Name, faction, tag..." autocomplete="off">
+          </label>
+        </div>
+        <div class="f-block">
+          <div class="f-label"><span>Rarity</span><span id="rcount">64</span></div>
+          <div class="seg" id="rarity-seg">
+            <button data-r="All" class="on">ALL</button>
+            <button data-r="EX">EX</button>
+            <button data-r="SS">SS</button>
+            <button data-r="S">S</button>
+            <button data-r="A">A</button>
+          </div>
+        </div>
+        <div class="f-block">
+          <div class="f-label"><span>Element</span><span>08</span></div>
+          <div class="el-list" id="el-list"></div>
+        </div>
+        <div class="f-block">
+          <div class="f-label"><span>Class</span><span>16</span></div>
+          <select class="sort" id="class-sel"><option value="All">All classes</option></select>
+        </div>
+        <div class="f-block">
+          <div class="f-label"><span>Sort</span><span>asc</span></div>
+          <select class="sort" id="sort-sel">
+            <option value="rank">Index order</option>
+            <option value="name">Name A&ndash;Z</option>
+            <option value="cost">Cost</option>
+            <option value="str">STR</option>
+            <option value="tec">TEC</option>
+          </select>
+        </div>
+        <button class="reset" id="reset">Reset filters</button>
+      </aside>
+      <div class="db">
+        <div class="db-bar">
+          <span class="db-count" id="db-count">Showing <b>64</b> of 64</span>
+          <div class="db-tools">
+            <button id="view-grid" class="on">Grid</button>
+            <button id="view-table">Table</button>
+          </div>
+        </div>
+        <div class="units" id="units"></div>
+        <div class="tablewrap" id="tablewrap" style="display:none">
+          <table>
+            <thead><tr><th>Vanguard</th><th>Class</th><th>Element</th><th>Rank</th><th class="num">Cost</th><th class="num">STR</th><th class="num">INT</th><th class="num">VIT</th><th class="num">AGI</th><th class="num">TEC</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="plates" class="band">
+  <div class="wrap">
+    <div class="sec-top">
+      <div class="sec-title"><span class="idx">02 // VISUAL LOG</span><h2>Plates</h2></div>
+      <p>Thirty-one plates: twenty world scenes and eleven character story CGs. Select a frame to open it at full resolution.</p>
+    </div>
+    <div class="sec-body">
+      <div class="plates" id="plateGrid"></div>
+    </div>
+  </div>
+</section>
+
+<section id="skins" class="band">
+  <div class="wrap">
+    <div class="sec-top">
+      <div class="sec-title"><span class="idx">03 // WARDROBE</span><h2>Skins</h2></div>
+      <p>Every non-default skin with archived art: 131 looks across 52 vanguards. Filter by callsign initial; select a frame to open it.</p>
+    </div>
+    <div class="sec-body">
+      <div class="skinbar" id="skinbar"></div>
+      <div class="skins" id="skinGrid"></div>
+    </div>
+  </div>
+</section>
+
+<section id="chronicle">
+  <div class="wrap">
+    <div class="sec-top">
+      <div class="sec-title"><span class="idx">04 // OPERATIONS</span><h2>Chronicle</h2></div>
+      <p>Banner windows, milestone patches, and the full patch archive from November 2024 onward.</p>
+    </div>
+    <div class="sec-body">
+      <div class="tabs" role="tablist">
+        <button class="on" data-tab="banners" role="tab">Banner schedule</button>
+        <button data-tab="milestones" role="tab">Milestones</button>
+        <button data-tab="archive" role="tab">Patch archive</button>
+      </div>
+      <div class="tabpane on" id="pane-banners">
+        <div class="gantt">
+          <div class="gantt-head"><span>2026 // Special Search windows</span><span>82 runs since launch</span></div>
+          <div class="axis" id="axis"></div>
+          <div class="grows" id="grows"></div>
+          <div class="gantt-foot"><span style="color:var(--lime)">&#9632; Active</span><span style="color:var(--gold)">&#9632; New</span><span style="color:var(--cyan)">&#9632; Rerun</span><span><b>Source:</b> official patch notes</span></div>
+        </div>
+      </div>
+      <div class="tabpane" id="pane-milestones"><div class="log" id="log"></div></div>
+      <div class="tabpane" id="pane-archive"><div class="arch" id="arch"></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="systems" class="band">
+  <div class="wrap">
+    <div class="sec-top">
+      <div class="sec-title"><span class="idx">05 // SYSTEMS</span><h2>Operator Brief</h2></div>
+      <p>Eight systems that define a run. Everything else is team-building.</p>
+    </div>
+    <div class="sec-body"><div class="mods" id="mods"></div></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Unofficial field database. Data compiled from GachaWiki, current to the November 5, 2026 patch. Horizon Walker and its art are property of Gentlemaniac. No affiliation.</p>
+    <div class="end"><b>HW // TERMINAL 02</b>64 units &middot; 53 patches &middot; 131 skins &middot; 31 plates</div>
+  </div>
+</footer>
+
+<div class="drawer-back" id="dback"></div>
+<aside class="drawer" id="drawer" aria-label="Vanguard detail">
+  <div class="dtop"><span>Unit dossier</span><button class="dclose" id="dclose">Close ×</button></div>
+  <div id="dbody"></div>
+</aside>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Image viewer">
+  <button id="lb-close">Close ×</button>
+  <figure><img id="lb-img" alt=""><figcaption><span id="lb-title"></span><span id="lb-sub"></span></figcaption></figure>
+</div>
+
+<script src="../../data/site.js"></script>
+<script>
+const HW = window.HW;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ELEM = {Physical:'#c9b58a', Magic:'#b39ddb', Fire:'#ff8a5c', Electric:'#ffd166', Slash:'#e08a8a', Pierce:'#7fb5cc', Crush:'#c9a27a', Immaterial:'#7fd6c2'};
+const RCOL = {EX:'var(--ex)', SS:'var(--ss)', S:'var(--s)', A:'var(--a)'};
+const icon = c => { const f = c.icon ? c.icon.split('/').pop() : ''; return '../../assets/heroes/' + (!f || f === '_placeholder.svg' || f === 'UI_Icon_Hero_Charlotte_N01.png' ? '_placeholder.png' : f); };
+const rankOf = new Map(HW.roster.map((c,i) => [c.name, i+1]));
+
+/* facets build */
+const elements = HW.stats.elements;
+const classes = [...new Set(HW.roster.map(c => c.class))].sort();
+const elList = $('#el-list');
+let state = { rarity:'All', element:'All', class:'All', q:'', sort:'rank', view:'grid', open:null };
+const elCounts = Object.fromEntries(elements.map(e => [e, HW.roster.filter(c => c.element === e).length]));
+
+function elBtn(label, count, val, on){
+  return `<button class="el-btn ${on?'on':''}" data-el="${esc(val)}"><i class="swatch" style="background:${val==='All'?'var(--mut)':ELEM[val]}"></i>${esc(label)}<span class="n">${count}</span></button>`;
+}
+elList.innerHTML = elBtn('All elements', HW.roster.length, 'All', true) + elements.map(e => elBtn(e, elCounts[e], e, false)).join('');
+$('#class-sel').innerHTML += classes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+
+/* filtering */
+function current(){
+  let rows = HW.roster.filter(c => {
+    if (state.rarity !== 'All' && c.rarity !== state.rarity) return false;
+    if (state.element !== 'All' && c.element !== state.element) return false;
+    if (state.class !== 'All' && c.class !== state.class) return false;
+    if (state.q) {
+      const q = state.q.toLowerCase();
+      const hay = (c.name + ' ' + c.faction + ' ' + c.class + ' ' + c.element + ' ' + c.tags.join(' ')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  const key = { rank:c => rankOf.get(c.name), name:c => c.name.toLowerCase(), cost:c => c.cost, str:c => -c.str, tec:c => -c.tec }[state.sort];
+  return rows.sort((a,b) => key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : rankOf.get(a.name) - rankOf.get(b.name));
+}
+
+function render(){
+  const rows = current();
+  $('#db-count').innerHTML = `Showing <b>${rows.length}</b> of ${HW.roster.length}`;
+  const units = $('#units');
+  units.innerHTML = rows.map(c => `
+    <button class="unit" data-name="${esc(c.name)}">
+      <div class="uport"><img src="${icon(c)}" alt="${esc(c.name)}" loading="lazy">
+        <span class="ur" style="color:${RCOL[c.rarity]}">${esc(c.rarity)}</span>
+        <span class="ucost">${c.cost} AP</span>
+      </div>
+      <div class="uname">${esc(c.name)}</div>
+      <div class="umeta"><i class="dot" style="background:${ELEM[c.element]}"></i>${esc(c.class)} / ${esc(c.element)}</div>
+    </button>`).join('');
+  const tbody = $('#tbody');
+  tbody.innerHTML = rows.map(c => `
+    <tr data-name="${esc(c.name)}">
+      <td><span class="tname"><img src="${icon(c)}" alt="" loading="lazy">${esc(c.name)}</span></td>
+      <td class="tdim">${esc(c.class)}</td>
+      <td class="tdim"><span style="display:inline-flex;align-items:center;gap:6px"><i class="swatch" style="background:${ELEM[c.element]}"></i>${esc(c.element)}</span></td>
+      <td style="color:${RCOL[c.rarity]};font-family:'JetBrains Mono',monospace;font-size:10px">${esc(c.rarity)}</td>
+      <td class="num">${c.cost}</td><td class="num">${c.str}</td><td class="num">${c.int}</td><td class="num">${c.vit}</td><td class="num">${c.agi}</td><td class="num">${c.tec}</td>
+    </tr>`).join('');
+  units.querySelectorAll('.unit').forEach(b => b.addEventListener('click', () => openUnit(b.dataset.name)));
+  tbody.querySelectorAll('tr').forEach(b => b.addEventListener('click', () => openUnit(b.dataset.name)));
+  $('#tablewrap').style.display = state.view === 'table' ? '' : 'none';
+  units.style.display = state.view === 'grid' ? '' : 'none';
+}
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  state.rarity = b.dataset.r;
+  document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b));
+  render();
+}));
+elList.addEventListener('click', e => {
+  const b = e.target.closest('.el-btn'); if (!b) return;
+  state.element = b.dataset.el;
+  [...elList.children].forEach(x => x.classList.toggle('on', x === b));
+  render();
+});
+$('#class-sel').addEventListener('change', e => { state.class = e.target.value; render(); });
+$('#sort-sel').addEventListener('change', e => { state.sort = e.target.value; render(); });
+$('#q').addEventListener('input', e => { state.q = e.target.value.trim(); render(); });
+$('#reset').addEventListener('click', () => {
+  state = {...state, rarity:'All', element:'All', class:'All', q:'', sort:'rank'};
+  $('#class-sel').value = 'All'; $('#sort-sel').value = 'rank'; $('#q').value = '';
+  document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x.dataset.r === 'All'));
+  [...elList.children].forEach((x,i) => x.classList.toggle('on', i === 0));
+  render();
+});
+$('#view-grid').addEventListener('click', () => { state.view='grid'; $('#view-grid').classList.add('on'); $('#view-table').classList.remove('on'); render(); });
+$('#view-table').addEventListener('click', () => { state.view='table'; $('#view-table').classList.add('on'); $('#view-grid').classList.remove('on'); render(); });
+
+/* drawer */
+const drawer = $('#drawer'), dback = $('#dback');
+function openUnit(name){
+  const c = HW.roster.find(x => x.name === name); if (!c) return;
+  $('#dbody').innerHTML = `
+    <div class="dport">
+      <img src="${icon(c)}" alt="${esc(c.name)}">
+      <div><h3>${esc(c.name)}</h3>
+        <div class="dmeta"><b>${esc(c.rarity)}</b> rank<br><b>${esc(c.class)}</b> class<br><b>${esc(c.element)}</b> element<br><b>${esc(c.faction)}</b> faction</div>
+      </div>
+    </div>
+    <div class="dstats">
+      ${[['STR',c.str],['INT',c.int],['VIT',c.vit],['AGI',c.agi],['TEC',c.tec]].map(([k,v]) =>
+        `<div class="ds"><span>${k}</span><div class="bar"><i style="width:${Math.round(v/23*100)}%"></i></div><b>${v}</b></div>`).join('')}
+      <div class="ds"><span>COST</span><div class="bar"><i style="width:${Math.round(c.cost/10*100)}%"></i></div><b>${c.cost}</b></div>
+    </div>
+    <div class="dtags">${c.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>
+    <div class="dnote">Index #${String(rankOf.get(c.name)).padStart(2,'0')} // Lv 60 base // patch 2026-11-05</div>`;
+  drawer.classList.add('on'); dback.classList.add('on'); document.body.style.overflow='hidden';
+}
+function closeUnit(){ drawer.classList.remove('on'); dback.classList.remove('on'); document.body.style.overflow=''; }
+$('#dclose').addEventListener('click', closeUnit);
+dback.addEventListener('click', closeUnit);
+
+/* plates */
+const plates = $('#plateGrid');
+HW.gallery.forEach(g => {
+  const b = document.createElement('figure');
+  b.className = 'plate'; b.tabIndex = 0; b.setAttribute('role','button');
+  b.innerHTML = `<img src="../../assets/cg/${esc(g.file)}" alt="${esc(g.title)} — ${esc(g.sub)}" loading="lazy">
+    <figcaption><span><b>${esc(g.title)}</b> ${esc(g.sub)}</span><span>+</span></figcaption>`;
+  b.addEventListener('click', () => openLb(g));
+  b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLb(g); } });
+  plates.append(b);
+});
+const lb = $('#lb');
+function showLb(src, alt, title, sub){
+  $('#lb-img').src = src; $('#lb-img').alt = alt;
+  $('#lb-title').textContent = title; $('#lb-sub').textContent = sub;
+  lb.classList.add('on'); document.body.style.overflow='hidden';
+}
+function openLb(g){
+  showLb('../../assets/cg/' + g.file, g.title + ' — ' + g.sub, g.title, g.sub);
+}
+function closeLb(){ lb.classList.remove('on'); document.body.style.overflow=''; }
+$('#lb-close').addEventListener('click', closeLb);
+lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ closeLb(); closeUnit(); } });
+
+/* skins */
+let skinInitial = 'All';
+const skinbar = $('#skinbar');
+const skinLetters = [...new Set(HW.skins.map(s => s.char[0].toUpperCase()))].sort();
+skinbar.innerHTML = `<button class="on" data-l="All" type="button">All</button>` +
+  skinLetters.map(l => `<button data-l="${l}" type="button">${l}</button>`).join('') +
+  `<span class="scount" id="skin-count">${HW.skins.length} skins</span>`;
+function renderSkins(){
+  const list = HW.skins.filter(s => skinInitial === 'All' || s.char[0].toUpperCase() === skinInitial);
+  const grid = $('#skinGrid');
+  grid.innerHTML = '';
+  list.forEach(s => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'skin';
+    b.innerHTML = `<img src="../../assets/skins/${esc(s.file)}" alt="${esc(s.char)} — ${esc(s.name)} skin" loading="lazy">
+      <span class="sn">${esc(s.num)}</span>
+      <span class="sc"><b>${esc(s.char)}</b>${esc(s.name)}</span>`;
+    b.addEventListener('click', () => showLb('../../assets/skins/' + s.file,
+      s.char + ' — ' + s.name + ' skin', s.char, s.name + ' · ' + s.num));
+    grid.append(b);
+  });
+  $('#skin-count').textContent = list.length + (list.length === 1 ? ' skin' : ' skins');
+}
+skinbar.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  skinInitial = b.dataset.l;
+  skinbar.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  renderSkins();
+}));
+renderSkins();
+
+/* tabs */
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + b.dataset.tab));
+}));
+
+/* gantt */
+const RANGE_START = new Date('2026-06-01T00:00:00Z');
+const RANGE_END = new Date('2026-12-01T00:00:00Z');
+const SPAN = RANGE_END - RANGE_START;
+const pct = d => (new Date(d + 'T00:00:00Z') - RANGE_START) / SPAN * 100;
+$('#axis').innerHTML = ['JUN','JUL','AUG','SEP','OCT','NOV','DEC'].map((m,i) => {
+  const d = new Date(Date.UTC(2026, 5 + i, 1));
+  return `<span style="left:${i/6*100}%">${m}</span>`;
+}).join('');
+$('#grows').innerHTML = HW.banners.map(b => {
+  const left = pct(b.start), width = Math.max(pct(b.end) - left, 1.5);
+  const cls = b.status === 'Active' ? 'active' : b.type === 'New' ? 'new' : '';
+  return `<div class="grow">
+    <div class="glabel">${esc(b.vanguard)}<small>${esc(b.weapon)}</small></div>
+    <div class="gtrack"><div class="gbar ${cls}" style="left:${left}%;width:${width}%">${esc(b.period)}</div></div>
+  </div>`;
+}).join('');
+
+/* milestones */
+let logHTML = '', lastYear = '';
+HW.milestones.forEach(m => {
+  const y = m.date.slice(0,4);
+  if (y !== lastYear){ logHTML += `<div class="log-year"><b>${y}</b><span>${HW.milestones.filter(x => x.date.startsWith(y)).length} entries</span></div>`; lastYear = y; }
+  const hot = ['Launch','System','Platform','Event'].includes(m.tag) ? 'hot' : '';
+  logHTML += `<div class="log-item ${hot}"><time>${esc(m.label)}</time><div><h4>${esc(m.title)}<em>${esc(m.tag)}</em></h4><p>${esc(m.body)}</p></div></div>`;
+});
+$('#log').innerHTML = logHTML;
+
+/* archive */
+$('#arch').innerHTML = HW.updates.map(u => `<div class="arow"><time>${esc(u.date)}</time><span><b>${esc(u.title.replace('Patch Note - ',''))}</b> &mdash; ${esc(u.tags[0] || '')}</span></div>`).join('');
+
+/* mods */
+$('#mods').innerHTML = HW.systems.map((s,i) => `<article class="mod"><div class="mno">SYS_${String(i+1).padStart(2,'0')}</div><span class="mtag">${i > 6 ? '2026' : 'core'}</span><h3>${esc(s.name)}</h3><p>${esc(s.body)}</p></article>`).join('');
+
+render();
+</script>
+</body>
+</html>
