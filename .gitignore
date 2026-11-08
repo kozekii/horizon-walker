@@ -1,2 +1,6 @@
 screenshots/
 *.tmp
+iterations/01-codex/
+iterations/03-long-walk/
+iterations/04-atlas/
+assets/gameicon.jpg
